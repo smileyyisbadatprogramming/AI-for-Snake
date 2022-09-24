@@ -4,7 +4,11 @@ import genetics.DNA;
 import helpers.DoubleMath;
 
 import java.awt.Color;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,7 +37,7 @@ public class Snake {
 	public static final double healthdecrement = .02; // decremented each loop
 
 	// misc:
-	public final boolean displayCuteEyes = false; // try it out yourself :)
+	public final boolean displayCuteEyes = true; // try it out yourself :)
 	public final boolean snakeInertia = false;
 
 	// basic snake attributes:
@@ -51,17 +55,15 @@ public class Snake {
 	/**
 	 * Initializes a new snake with given DNA
 	 * 
-	 * @param dna
-	 *            if null, it generates a random new DNA
-	 * @param world
-	 *            reference to the world for spawn point
+	 * @param dna   if null, it generates a random new DNA
+	 * @param world reference to the world for spawn point
 	 */
 
 	public Snake(DNA dna, World world) {
-		double x = Math.random() * (world.width - 2 * wallCollisionThreshold - 2 * GameLoop.globalCircleRadius) + wallCollisionThreshold
-				+ GameLoop.globalCircleRadius;
-		double y = Math.random() * (world.height - 2 * wallCollisionThreshold - 2 * GameLoop.globalCircleRadius) + wallCollisionThreshold
-				+ GameLoop.globalCircleRadius;
+		double x = Math.random() * (world.width - 2 * wallCollisionThreshold - 2 * GameLoop.globalCircleRadius)
+				+ wallCollisionThreshold + GameLoop.globalCircleRadius;
+		double y = Math.random() * (world.height - 2 * wallCollisionThreshold - 2 * GameLoop.globalCircleRadius)
+				+ wallCollisionThreshold + GameLoop.globalCircleRadius;
 
 		int dnalength = NeuralNet.calcNumberOfCoeffs(stageSizes, isNNSymmetric) + 1;
 		if (dna == null) {
@@ -98,8 +100,7 @@ public class Snake {
 	/**
 	 * Movement, aging and collisions
 	 * 
-	 * @param world
-	 *            reference to the world
+	 * @param world reference to the world
 	 * @return true when snake died that round.
 	 */
 	public boolean update(World world) {
@@ -140,12 +141,12 @@ public class Snake {
 		PhysicalCircle previous = head;
 		for (int i = 0; i < snakeSegments.size(); i++) {
 			PhysicalCircle c = snakeSegments.get(i);
-			if (snakeInertia){
+			if (snakeInertia) {
 				c.followBouncy(previous);
 			} else {
 				c.followStatic(previous);
 			}
-			
+
 			c.updatePosition();
 			for (int j = 0; j < i; j++) {
 				c.collideStatic(snakeSegments.get(j));
@@ -163,7 +164,8 @@ public class Snake {
 		for (PhysicalCircle nibble : world.getNibbles()) {
 			if (head.isColliding(nibble, -10)) {
 				score += world.calcValue(nibble);
-				snakeSegments.add(new PhysicalCircle(snakeSegments.get(snakeSegments.size() - 1).x, snakeSegments.get(snakeSegments.size() - 1).y, nibble.rad));
+				snakeSegments.add(new PhysicalCircle(snakeSegments.get(snakeSegments.size() - 1).x,
+						snakeSegments.get(snakeSegments.size() - 1).y, nibble.rad));
 				nibblesToRemove.add(nibble);
 				nibbleEatCount++;
 			}
@@ -194,8 +196,7 @@ public class Snake {
 	}
 
 	/**
-	 * Struct for see-able objects No enum was used for simpler conversion to
-	 * array
+	 * Struct for see-able objects No enum was used for simpler conversion to array
 	 */
 	public class Thing {
 		public double distance = maximumSightDistance;
@@ -208,8 +209,7 @@ public class Snake {
 	/**
 	 * Main calculation
 	 * 
-	 * @param world
-	 *            reference to the world for environment information
+	 * @param world reference to the world for environment information
 	 * @return angle increment to move
 	 */
 	public double brain(World world) {
@@ -223,10 +223,10 @@ public class Snake {
 		input = updateVisualInput(input, snakeSegments, 1);
 		// walls:
 		/*
-		 * (This should be replaced by a better algorithm) It is basically a
-		 * brute force attempt converting the continuous border lines into many
-		 * PhysicalCirle objects to apply the same algorithm When someone comes
-		 * up with a better algorithm, please let me know :)
+		 * (This should be replaced by a better algorithm) It is basically a brute force
+		 * attempt converting the continuous border lines into many PhysicalCirle
+		 * objects to apply the same algorithm When someone comes up with a better
+		 * algorithm, please let me know :)
 		 */
 		int step = (int) (maximumSightDistance * Math.sin(fieldOfView / (FOVDIVISIONS * 1d))) / 20;
 		LinkedList<PhysicalCircle> walls = new LinkedList<PhysicalCircle>();
@@ -244,15 +244,18 @@ public class Snake {
 		double stageA[] = new double[FIRSTSTAGESIZE]; // zeros initialized ;)
 		if (isNNSymmetric) {
 			for (int i = 0; i < FOVDIVISIONS; i++) {
-				stageA[input[i].type * FOVDIVISIONS + i] = Stage.signalMultiplier * (maximumSightDistance - input[i].distance) / maximumSightDistance;
+				stageA[input[i].type * FOVDIVISIONS + i] = Stage.signalMultiplier
+						* (maximumSightDistance - input[i].distance) / maximumSightDistance;
 				stageA[FIRSTSTAGESIZE - 1 - (input[i + FOVDIVISIONS].type * FOVDIVISIONS + i)] = Stage.signalMultiplier
 						* (maximumSightDistance - input[i + FOVDIVISIONS].distance) / maximumSightDistance;
 			}
 		} else {
 			for (int i = 0; i < FOVDIVISIONS; i++) {
-				stageA[input[i].type * FOVDIVISIONS * 2 + i] = Stage.signalMultiplier * (maximumSightDistance - input[i].distance) / maximumSightDistance;
-				stageA[input[i + FOVDIVISIONS].type * FOVDIVISIONS * 2 + FOVDIVISIONS * 2 - 1 - i] = Stage.signalMultiplier
-						* (maximumSightDistance - input[i + FOVDIVISIONS].distance) / maximumSightDistance;
+				stageA[input[i].type * FOVDIVISIONS * 2 + i] = Stage.signalMultiplier
+						* (maximumSightDistance - input[i].distance) / maximumSightDistance;
+				stageA[input[i + FOVDIVISIONS].type * FOVDIVISIONS * 2 + FOVDIVISIONS * 2 - 1
+						- i] = Stage.signalMultiplier * (maximumSightDistance - input[i + FOVDIVISIONS].distance)
+								/ maximumSightDistance;
 			}
 		}
 		double output[] = brainNet.calc(stageA);
@@ -266,17 +269,14 @@ public class Snake {
 	}
 
 	/**
-	 * Function to update input vector Input Vector contains distance and type
-	 * of closest objects seen by each visual cell This function replaces those
-	 * by "Things" closer to the head of the snake Objects further away or
-	 * outside the FOV are ignored
+	 * Function to update input vector Input Vector contains distance and type of
+	 * closest objects seen by each visual cell This function replaces those by
+	 * "Things" closer to the head of the snake Objects further away or outside the
+	 * FOV are ignored
 	 * 
-	 * @param input
-	 *            Array of the current things seen by the snake
-	 * @param objects
-	 *            List of objects to be checked
-	 * @param type
-	 *            Thing-Type: 0: Wall, 1: Snake, 2: Nibble
+	 * @param input   Array of the current things seen by the snake
+	 * @param objects List of objects to be checked
+	 * @param type    Thing-Type: 0: Wall, 1: Snake, 2: Nibble
 	 * @return Updated input array
 	 */
 	private Thing[] updateVisualInput(Thing input[], List<PhysicalCircle> objects, int type) {
@@ -304,35 +304,74 @@ public class Snake {
 	/**
 	 * Draws the snake to Graphics
 	 * 
-	 * @param g
-	 *            Graphics object to draw to
+	 * @param g2d Graphics object to draw to
 	 */
 	public void draw(Graphics g) {
-		// Snake body
-		int alpha = (int) deathFade;
-		for (int i = 0; i < snakeSegments.size(); i++) {
-			Color c = new Color(Color.HSBtoRGB(hue, 1 - (float) i / ((float) snakeSegments.size() + 1f), 1));
-			g.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha));
-			PhysicalCircle p = snakeSegments.get(i);
-			g.fillOval((int) (p.x - p.rad), (int) (p.y - p.rad), (int) (2 * p.rad + 1), (int) (2 * p.rad + 1));
-		}
-		// Cute Eyes. A bit computationally expensive, so can be turned of
-		if (displayCuteEyes) {
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-			PhysicalCircle p = snakeSegments.get(0); // get head
-			double dist = p.rad / 2.3;
-			double size = p.rad / 3.5;
-			g.setColor(new Color(255, 255, 255, alpha));
-			g.fillOval((int) (p.x + p.vy * dist / p.getAbsoluteVelocity() - size), (int) (p.y - p.vx * dist / p.getAbsoluteVelocity() - size),
-					(int) (size * 2 + 1), (int) (size * 2 + 1));
-			g.fillOval((int) (p.x - p.vy * dist / p.getAbsoluteVelocity() - size), (int) (p.y + p.vx * dist / p.getAbsoluteVelocity() - size),
-					(int) (size * 2 + 1), (int) (size * 2 + 1));
-			size = p.rad / 6;
-			g.setColor(new Color(0, 0, 0, alpha));
-			g.fillOval((int) (p.x + p.vy * dist / p.getAbsoluteVelocity() - size), (int) (p.y - p.vx * dist / p.getAbsoluteVelocity() - size),
-					(int) (size * 2 + 1), (int) (size * 2 + 1));
-			g.fillOval((int) (p.x - p.vy * dist / p.getAbsoluteVelocity() - size), (int) (p.y + p.vx * dist / p.getAbsoluteVelocity() - size),
-					(int) (size * 2 + 1), (int) (size * 2 + 1));
+		int alpha = (int) deathFade;
+
+		// Head
+		PhysicalCircle p = snakeSegments.get(0);
+
+		var color = new Color(Color.HSBtoRGB(hue, 1, 1));
+		g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
+
+		double x0 = p.x - p.rad;
+		double y0 = p.y - p.rad;
+		double diameter = 2 * p.rad + 1;
+
+		var gp = new GradientPaint((float) (x0), (float) (y0), g2d.getColor(), (float) (x0 + diameter),
+				(float) (y0 + diameter), Color.BLACK, true);
+
+		g2d.setPaint(gp);
+		g2d.fill(new Ellipse2D.Double(x0, y0, diameter, diameter));
+
+		double dist = p.rad / 2.3;
+		double size = p.rad / 3.5;
+
+		double xvelocity = p.vx * dist / p.getAbsoluteVelocity();
+		double yvelocity = p.vy * dist / p.getAbsoluteVelocity();
+
+		// White eyeball
+		x0 = p.x - size;
+		y0 = p.y - size;
+		diameter = 2 * size + 1;
+
+		g2d.setColor(new Color(255, 255, 255, alpha));
+		g2d.fill(new Ellipse2D.Double(x0 + yvelocity, y0 - xvelocity, diameter, diameter)); // Left eye
+		g2d.fill(new Ellipse2D.Double(x0 - yvelocity, y0 + xvelocity, diameter, diameter)); // Right eye
+
+		// Pupil
+		size = p.rad / 6;
+		x0 = p.x - size;
+		y0 = p.y - size;
+		diameter = 2 * size + 1;
+
+		g2d.setColor(new Color(0, 0, 0, alpha));
+		g2d.fill(new Ellipse2D.Double(x0 + yvelocity, y0 - xvelocity, diameter, diameter)); // Left eye
+		g2d.fill(new Ellipse2D.Double(x0 - yvelocity, y0 + xvelocity, diameter, diameter)); // Right eye
+
+		// Body
+		for (var i = 1; i < snakeSegments.size(); i++) {
+			color = new Color(Color.HSBtoRGB(hue, 1 - (float) i / ((float) snakeSegments.size() + 1), 1));
+			g2d.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha));
+
+			p = snakeSegments.get(i);
+			x0 = p.x - p.rad;
+			y0 = p.y - p.rad;
+			diameter = 2 * p.rad + 1;
+
+//			color = new Color(Color.HSBtoRGB(1, 1 - (float) i / ((float) snakeSegments.size() + 1), 1));			
+			color = Color.BLACK;
+
+			gp = new GradientPaint((float) (x0), (float) (y0), g2d.getColor(), (float) (x0 + diameter),
+					(float) (y0 + diameter), new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha), true);
+
+			g2d.setPaint(gp);
+			g2d.fill(new Ellipse2D.Double(x0, y0, diameter, diameter));
 		}
 	}
 }

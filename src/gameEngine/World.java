@@ -2,6 +2,14 @@ package gameEngine;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Paint;
+import java.awt.RadialGradientPaint;
+import java.awt.RenderingHints;
+import java.awt.GradientPaint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
 import java.util.LinkedList;
 import java.util.concurrent.Semaphore;
 
@@ -57,9 +65,21 @@ public class World {
 	}
 
 	public void draw(Graphics g) {
-		g.setColor(Color.RED);
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
 		for (PhysicalCircle nibble : nibbles) {
-			g.fillOval((int) (nibble.x - nibble.rad), (int) (nibble.y - nibble.rad), (int) (2 * nibble.rad + 1), (int) (2 * nibble.rad + 1));
+			double diameter = 2 * nibble.rad + 1;
+			double x0 = nibble.x - nibble.rad;
+			double y0 = nibble.y - nibble.rad;
+
+			var circle = new Ellipse2D.Double(x0, y0, diameter, diameter);
+			GradientPaint gp = new GradientPaint((float) (x0), (float) (y0), Color.RED, (float) (x0 + diameter),
+					(float) (y0 + diameter), Color.BLACK, true);
+
+			g2d.setPaint(gp);
+			g2d.fill(circle);
 		}
 	}
 

@@ -6,6 +6,8 @@ import helpers.KeyboardListener;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -49,8 +51,8 @@ public class GameLoop extends JComponent {
 	public boolean simulationPaused = false;
 
 	/**
-	 * Component with the main loop This should be separated from the graphics,
-	 * but I was to lazy.
+	 * Component with the main loop This should be separated from the graphics, but
+	 * I was to lazy.
 	 */
 	public GameLoop(KeyboardListener keyb) {
 		world.height = 200;
@@ -164,8 +166,7 @@ public class GameLoop extends JComponent {
 	/**
 	 * initializes snake array with n fresh snakes
 	 * 
-	 * @param n
-	 *            amount of snakes
+	 * @param n amount of snakes
 	 */
 	public void firstGeneration(int n) {
 		snakes.clear();
@@ -200,8 +201,7 @@ public class GameLoop extends JComponent {
 	}
 
 	/**
-	 * Creates a new snake using the genetic algorithm and adds it to the
-	 * snake-list
+	 * Creates a new snake using the genetic algorithm and adds it to the snake-list
 	 */
 	public void newSnake() {
 		mutationrate = 10 / currentMaxFitness;
@@ -217,21 +217,26 @@ public class GameLoop extends JComponent {
 	 * Show graphics
 	 */
 	protected void paintComponent(Graphics g) {
-		super.paintComponent(g);
+		setFont(getFont().deriveFont(70.f).deriveFont(Font.BOLD));
+		Graphics2D g2d = (Graphics2D) g;
+		g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+		super.paintComponent(g2d);
+
 		// Background:
-		g.setColor(Color.black);
-		g.fillRect(0, 0, getWidth(), getHeight());
+		g2d.setColor(Color.black);
+		g2d.fillRect(0, 0, getWidth(), getHeight());
 
 		// Stats:
 		if (displayStatisticsActive) {
-			g.setColor(Color.DARK_GRAY);
-			g.setFont(new Font("Arial", 0, 64));
-			g.drawString("t = " + Long.toString(world.clock / 1000), 20, 105);
+			g2d.setColor(Color.DARK_GRAY);
+			g2d.setFont(new Font("Arial", 0, 64));
+			g2d.drawString("t = " + Long.toString(world.clock / 1000), 20, 105);
 
-			g.drawString("g = " + Integer.toString((int) currentGeneration), 20, 205);
-			g.setFont(new Font("Arial", 0, 32));
-			g.drawString("Mut. Prob.: " + String.format("%1$,.3f", mutationrate), 20, 305);
-			g.drawString("Max fitness: " + Integer.toString((int) currentMaxFitness), 20, 355);
+			g2d.drawString("g = " + Integer.toString((int) currentGeneration), 20, 205);
+			g2d.setFont(new Font("Arial", 0, 32));
+			g2d.drawString("Mut. Prob.: " + String.format("%1$,.3f", mutationrate), 20, 305);
+			g2d.drawString("Max fitness: " + Integer.toString((int) currentMaxFitness), 20, 355);
 
 			// print timeline:
 			synchronized (fitnessTimeline) {
@@ -242,8 +247,9 @@ public class GameLoop extends JComponent {
 					if (limit < bestscore)
 						limit = bestscore;
 					for (Double d : fitnessTimeline) {
-						g.setColor(new Color(0, 1, 0, .5f));
-						g.drawLine(x, (int) (getHeight() - getHeight() * last / limit), x + 2, (int) (getHeight() - getHeight() * d / limit));
+						g2d.setColor(new Color(0, 1, 0, .5f));
+						g2d.drawLine(x, (int) (getHeight() - getHeight() * last / limit), x + 2,
+								(int) (getHeight() - getHeight() * d / limit));
 						last = d;
 						x += 2;
 					}
@@ -252,13 +258,13 @@ public class GameLoop extends JComponent {
 		}
 		// neural net:
 		if (singleSnakeModeActive) {
-			snakes.getFirst().brainNet.display(g, 0, world.width, world.height);
+			snakes.getFirst().brainNet.display(g2d, 0, world.width, world.height);
 		}
 		// snakes:
 		synchronized (snakes) {
 			for (Snake s : snakes)
-				s.draw(g);
-			world.draw(g);
+				s.draw(g2d);
+			world.draw(g2d);
 		}
 	}
 
